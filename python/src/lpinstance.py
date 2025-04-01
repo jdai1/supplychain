@@ -169,7 +169,115 @@ class LPSolver:
             
             return cost_celing
             
-        raise Exception("balls")
+        raise Exception("no solution found")
+
+
+class IPSolver:
+    def __init__(self, filename: str):
+        self.lpinst = getLPInstance(filename)
+        self.model = Model()  # CPLEX solver
+        self.matrix_vars, self.facility_indicators, self.vehicle_indicators = self.init_vars() # vars[c][f][v]
+
+    def init_vars(self):
+        vars = []
+        assert self.lpinst
+        
+        for c in range(self.lpinst.numCustomers):
+            outer = []
+            for f in range(self.lpinst.numFacilities):
+                inner = []
+                for v in range(self.lpinst.numMaxVehiclePerFacility):
+                    inner.append(
+                        self.model.integer_var(
+                            0, 1, f"Facility: {f + 1}, Customer: {c + 1}, Vehicle: {v + 1}"
+                        )
+                    )
+                outer.append(inner)
+            vars.append(outer)
+
+        facility_indicators = self.model.integer_var_list(self.lpinst.numFacilities, 0, 1)
+        vehicle_indicators = [self.model.integer_var_list(self.lpinst.numMaxVehiclePerFacility, 0, 1) for _ in range(self.lpinst.numFacilities)] # [f][v]
+
+        return np.array(vars), np.array(facility_indicators), np.array(vehicle_indicators)
+    
+    def solve(self):
+        assert self.lpinst
+
+        for c in range(self.lpinst.numCustomers):
+            self.model.add_constraint(self.model.sum(self.matrix_vars[c, :, :].flatten().tolist()) == 1)
+
+        for f in range(self.lpinst.numFacilities):
+            for v in range(self.lpinst.numMaxVehiclePerFacility):
+                self.model.add_constraint(
+                    self.model.scal_prod(
+                        terms=self.matrix_vars[:, f, v].flatten().tolist(),
+                        coefs=self.lpinst.distanceCF[:, f].tolist(),
+                    )
+                    <= self.lpinst.truckDistLimit
+                )
+                for c in range(self.lpinst.numCustomers):
+                    self.model.add_constraint(
+                        self.vehicle_indicators[f][v] >= self.matrix_vars[c, f, v]
+                    )
+                self.model.add_constraint(
+                    self.vehicle_indicators[f][v] <= self.model.sum(self.matrix_vars[:, f, v].flatten().tolist())
+                )
+
+            # terms --> indicator variables for whether factory f serves customers 1..c
+            terms = [self.model.sum(self.matrix_vars[c, f, :].flatten().tolist()) for c in range(self.lpinst.numCustomers)]
+            self.model.add_constraint(
+                self.model.scal_prod(
+                    terms=terms,
+                    coefs=self.lpinst.demandC.tolist(),
+                )
+                <= self.lpinst.capacityF[f]
+            )
+
+            for c in range(self.lpinst.numCustomers):
+                for v in range(self.lpinst.numMaxVehiclePerFacility):
+                    self.model.add_constraint(
+                        self.facility_indicators[f] >= self.matrix_vars[c, f, v]
+                    )
+            self.model.add_constraint(
+                self.facility_indicators[f] <= self.model.sum(self.matrix_vars[:, f, :].flatten().tolist())
+            )
+
+        # TODO: Modify costs
+
+        facility_cost = self.model.scal_prod(
+            terms=self.facility_indicators,
+            coefs=self.lpinst.openingCostF
+        )
+        vehicle_cost = self.model.sum(self.vehicle_indicators.flatten().tolist()) * self.lpinst.truckUsageCost
+        
+        customer_cost = 0
+        for f in range(self.lpinst.numFacilities):
+            for v in range(self.lpinst.numMaxVehiclePerFacility):
+                customer_cost += self.model.scal_prod(
+                    terms=self.matrix_vars[:, f, v],
+                    coefs=self.lpinst.allocCostCF[:, f],
+                )
+
+        self.model.minimize(
+            self.model.sum([facility_cost, vehicle_cost, customer_cost])
+        )
+
+        sol = self.model.solve()
+        cost_celing = self.model.objective_value
+        if sol:
+            self.model.print_information()
+
+            # Print matrix values
+            # print("Matrix values:")
+            # for f in range(self.lpinst.numFacilities):
+            #     row_values = []
+            #     for c in range(self.lpinst.numCustomers):
+            #         row_values.append(f"{self.matrix_vars[f, c].solution_value:.4f}")
+            #     print(f"Facility {f+1}: {row_values}")
+            
+            return cost_celing
+            
+        raise Exception("no solution found")
 
 
 def dietProblem():

@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 from model_timer import Timer 
-from lpinstance import LPSolver,dietProblem
+from lpinstance import LPSolver, IPSolver
 import json
 
 
@@ -13,7 +13,7 @@ def main(args):
     filename = Path(args.input_file).name
     timer = Timer()
     timer.start() 
-    lpsolver = LPSolver(args.input_file)
+    lpsolver = IPSolver(args.input_file)
     try:
         sol = lpsolver.solve()
         timer.stop()
