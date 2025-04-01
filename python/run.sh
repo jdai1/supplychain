@@ -11,9 +11,9 @@ then
 fi
 	
 input=$1
-source p3_venv/bin/activate || exit 1
+# source p3_venv/bin/activate || exit 1
 # change this to point to your local installation
 # CHANGE it back to this value before submitting
 export DOCPLEX_COS_LOCATION=/local/projects/cplex/CPLEX_Studio2211
 # run the solver
-python3.9 src/main.py $input
+python3 src/main.py $input

@@ -158,6 +158,15 @@ class LPSolver:
         cost_celing = self.model.objective_value
         if sol:
             self.model.print_information()
+
+            # Print matrix values
+            print("Matrix values:")
+            for f in range(self.lpinst.numFacilities):
+                row_values = []
+                for c in range(self.lpinst.numCustomers):
+                    row_values.append(f"{self.matrix_vars[f, c].solution_value:.4f}")
+                print(f"Facility {f+1}: {row_values}")
+            
             return cost_celing
             
         raise Exception("balls")
