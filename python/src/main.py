@@ -13,7 +13,7 @@ def main(args):
     filename = Path(args.input_file).name
     timer = Timer()
     timer.start() 
-    lpsolver = IPSolver(args.input_file)
+    lpsolver = LPSolver(args.input_file)
     try:
         sol = lpsolver.solve()
         timer.stop()
@@ -25,10 +25,31 @@ def main(args):
             "Solution" : "--"
         }
     else:
+        # Format the result as a string directly
+        result = "===== SOLUTION SUMMARY ====="
+        result += f"Minimum Cost: {sol:.2f}"
+        
+        # Check if lpinst exists before using its attributes
+        if lpsolver.lpinst:
+            result += "===== MATRIX VARIABLES ====="
+            for f in range(lpsolver.lpinst.numFacilities):
+                matrix_line = ""
+                for c in range(lpsolver.lpinst.numCustomers):
+                    matrix_line += f"{lpsolver.matrix_vars[f, c].solution_value:.4f} "
+                result += matrix_line + "\n"
+            
+            result += "===== VEHICLE VARIABLES ====="
+            for f in range(lpsolver.lpinst.numFacilities):
+                result += f"{lpsolver.vehicle_vars[f].solution_value:.4f} "
+        
+        # Print the summary to the console
+        print(result)
+        
+        # Create and print JSON output
         printSol = {
             "Instance" : filename,
             "Time" : timer.getElapsed(),
-            "Result" : sol, 
+            "Result" : result,
             "Solution" : "OPT"
         }
         print(json.dumps(printSol))
