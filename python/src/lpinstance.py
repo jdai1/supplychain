@@ -1,8 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from docplex.mp.context import *
-from docplex.mp.model import Model
+from docplex.mp.context import * # type: ignore
+from docplex.mp.model import Model # type: ignore
 from typing import Optional
 import numpy as np
 import math
@@ -31,9 +31,9 @@ def getLPInstance(fileName: str) -> Optional[LPInstance]:
         with open(fileName, "r") as fl:
             numCustomers, numFacilities = [int(i) for i in fl.readline().split()]
             numMaxVehiclePerFacility = numCustomers
-            print(
-                f"numCustomers: {numCustomers} numFacilities: {numFacilities} numVehicle: {numMaxVehiclePerFacility}"
-            )
+            # print(
+            #     f"numCustomers: {numCustomers} numFacilities: {numFacilities} numVehicle: {numMaxVehiclePerFacility}"
+            # )
             allocCostCF = np.zeros((numCustomers, numFacilities))
 
             allocCostraw = [float(i) for i in fl.readline().split()]
@@ -129,6 +129,11 @@ class LPSolver:
                 <= self.lpinst.truckDistLimit * self.vehicle_vars[f]
             )
 
+            for c in range(self.lpinst.numCustomers):
+                self.model.add_constraint(
+                    self.matrix_vars[f, c] * self.lpinst.distanceCF[c, f] <= self.lpinst.truckDistLimit
+                )
+
         facility_cost = 0
         for f in range(self.lpinst.numFacilities):
             totalDemandMet = self.model.scal_prod(
@@ -157,15 +162,17 @@ class LPSolver:
         sol = self.model.solve()
         cost_celing = self.model.objective_value
         if sol:
-            self.model.print_information()
-
-            # Print matrix values
-            print("Matrix values:")
+            print(f"Minimum Cost: {cost_celing:.2f}")
+            
+            print("\n===== MATRIX VARIABLES =====")
             for f in range(self.lpinst.numFacilities):
-                row_values = []
                 for c in range(self.lpinst.numCustomers):
-                    row_values.append(f"{self.matrix_vars[f, c].solution_value:.4f}")
-                print(f"Facility {f+1}: {row_values}")
+                    print(f"{self.matrix_vars[f, c].solution_value:.4f}", end=" ")
+                print()
+            
+            print("\n===== VEHICLE VARIABLES =====")
+            for f in range(self.lpinst.numFacilities):
+                print(f"Facility {f+1} vehicles: {self.vehicle_vars[f].solution_value:.4f}")
             
             return cost_celing
             

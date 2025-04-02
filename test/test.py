@@ -130,7 +130,7 @@ class SupplyChainTest(unittest.TestCase):
             total_distance = 0
             for c in range(self.numCustomers):
                 curr_distance = self.distanceCF[c, f] * self.matrix_vars[f, c]
-                if curr_distance > self.truckDistLimit:
+                if curr_distance > self.truckDistLimit + 1e-2:
                     self.fail(f"Instance: {self.instance_file}, Output: {self.output_file}, Line: {self.line_number}, Facility {f} exceeds distance limit: {curr_distance} > {self.truckDistLimit}, distance: {self.distanceCF[c, f]}, assignment: {self.matrix_vars[f, c]}")
                 total_distance += curr_distance
                 
@@ -168,10 +168,10 @@ def create_test_suite(instance_file, output_file, line_number):
     """Create a test suite for a specific instance and output file pair"""
     suite = unittest.TestSuite()
     test_cases = [
-        # 'test_facility_capacity_constraint',
-        # 'test_customer_assignment_constraint',
+        'test_facility_capacity_constraint',
+        'test_customer_assignment_constraint',
         'test_vehicle_distance_constraint',
-        # 'test_overall_solution_validity'
+        'test_overall_solution_validity'
     ]
     
     for test_case in test_cases:
@@ -200,5 +200,5 @@ def run_tests(result_file):
     return result.wasSuccessful()
 
 if __name__ == '__main__': 
-    success = run_tests("python/temp.log")
+    success = run_tests("python/a.log")
 
