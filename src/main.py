@@ -13,7 +13,7 @@ def main(args):
     filename = Path(args.input_file).name
     timer = Timer()
     timer.start() 
-    lpsolver = IPSolver(args.input_file)
+    lpsolver = LPSolver(args.input_file)
     try:
         sol = lpsolver.solve()
         timer.stop()
