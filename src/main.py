@@ -58,7 +58,7 @@ def main(args):
             printSol = {
                 "Instance" : filename,
                 "Time" : round(timer.getElapsed(), 2),
-                "Result" : sol, 
+                "Result" : int(sol), 
                 "Solution" : "OPT"
             }
             print(json.dumps(printSol))
