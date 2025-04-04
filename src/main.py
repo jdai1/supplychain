@@ -57,7 +57,7 @@ def main(args):
         else:
             printSol = {
                 "Instance" : filename,
-                "Time" : timer.getElapsed(),
+                "Time" : round(timer.getElapsed(), 2),
                 "Result" : sol, 
                 "Solution" : "OPT"
             }
